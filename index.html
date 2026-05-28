@@ -96,6 +96,24 @@ async function startCamera(){
     });
 
     video.srcObject = stream;
+const track = stream.getVideoTracks()[0];
+
+const capabilities = track.getCapabilities();
+
+console.log(capabilities);
+
+if(capabilities.focusMode){
+
+await track.applyConstraints({
+advanced:[
+{
+focusMode:"continuous"
+}
+]
+});
+
+}
+
 
   }catch(err){
 
