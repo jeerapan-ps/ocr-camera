@@ -39,6 +39,21 @@ textarea{
 canvas{
   display:none;
 }
+#focusRing{
+position:absolute;
+width:80px;
+height:80px;
+border:3px solid yellow;
+border-radius:50%;
+pointer-events:none;
+transform:translate(-50%,-50%);
+display:none;
+}
+
+#videoContainer{
+position:relative;
+display:inline-block;
+}
 
 </style>
 
@@ -48,7 +63,18 @@ canvas{
 
 <h2>OCR Camera</h2>
 
-<video id="video" autoplay playsinline muted></video>
+<div id="videoContainer">
+
+<video
+ id="video"
+ autoplay
+ playsinline
+ muted
+ style="width:100%;max-width:500px;background:black;"> </video>
+
+  <div id="focusRing"></div>
+
+</div>
 
 <canvas id="canvas"></canvas>
 
@@ -96,24 +122,6 @@ async function startCamera(){
     });
 
     video.srcObject = stream;
-const track = stream.getVideoTracks()[0];
-
-const capabilities = track.getCapabilities();
-
-console.log(capabilities);
-
-if(capabilities.focusMode){
-
-await track.applyConstraints({
-advanced:[
-{
-focusMode:"continuous"
-}
-]
-});
-
-}
-
 
   }catch(err){
 
@@ -170,8 +178,82 @@ async function copyText(){
 
 }
 
+  const focusRing = document.getElementById('focusRing');
+
+video.addEventListener('click', async (e)=>{
+
+if(!stream) return;
+
+const rect = video.getBoundingClientRect();
+
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
+
+focusRing.style.left = x + "px";
+focusRing.style.top = y + "px";
+
+focusRing.style.display = "block";
+
+setTimeout(()=>{
+focusRing.style.display = "none";
+},1000);
+
+try{
+
+```
+const track = stream.getVideoTracks()[0];
+
+const capabilities = track.getCapabilities();
+
+console.log(capabilities);
+
+if(capabilities.focusMode){
+
+  await track.applyConstraints({
+
+    advanced:[
+
+      {
+        focusMode:"single-shot"
+      }
+
+    ]
+
+  });
+
+}
+```
+
+}catch(err){
+
+```
+console.log(err);
+```
+
+}
+
+});
+
 </script>
 
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
