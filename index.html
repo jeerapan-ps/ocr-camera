@@ -53,19 +53,10 @@ canvas{
 <canvas id="canvas"></canvas>
 
 <br>
-
-<button onclick="startCamera()">
-เปิดกล้อง
-</button>
-
-<button onclick="scanText()">
-อ่านข้อความ
-</button>
-
-<button onclick="copyText()">
-คัดลอก
-</button>
-
+<button onclick="startCamera()">เปิดกล้อง</button>
+<button onclick="switchCamera()">สลับกล้อง</button>
+<button onclick="scanText()">อ่านข้อความ</button>
+<button onclick="copyText()">คัดลอก</button>
 <br>
 
 <textarea id="result"></textarea>
@@ -78,13 +69,30 @@ const result = document.getElementById('result');
 
 let stream = null;
 
+let useFrontCamera = false;
+
 async function startCamera(){
 
   try{
 
+    if(stream){
+
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+
+    }
+
     stream = await navigator.mediaDevices.getUserMedia({
-      video:true,
+
+      video:{
+        facingMode: useFrontCamera
+          ? "user"
+          : "environment"
+      },
+
       audio:false
+
     });
 
     video.srcObject = stream;
@@ -94,6 +102,14 @@ async function startCamera(){
     alert(err.name + "\n" + err.message);
 
   }
+
+}
+
+async function switchCamera(){
+
+  useFrontCamera = !useFrontCamera;
+
+  await startCamera();
 
 }
 
@@ -137,6 +153,7 @@ async function copyText(){
 }
 
 </script>
+
 
 </body>
 </html>
