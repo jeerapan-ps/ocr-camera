@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 
 <html>
+
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,6 +17,11 @@ body{
   background:#f5f5f5;
 }
 
+#videoContainer{
+  position:relative;
+  display:inline-block;
+}
+
 video{
   width:100%;
   max-width:500px;
@@ -23,10 +29,24 @@ video{
   background:black;
 }
 
+#focusRing{
+  position:absolute;
+  width:80px;
+  height:80px;
+  border:3px solid yellow;
+  border-radius:50%;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  display:none;
+}
+
 button{
   padding:12px 20px;
-  margin:10px;
+  margin:10px 5px;
   font-size:16px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
 }
 
 textarea{
@@ -34,25 +54,12 @@ textarea{
   max-width:500px;
   height:200px;
   margin-top:15px;
+  padding:10px;
+  font-size:16px;
 }
 
 canvas{
   display:none;
-}
-#focusRing{
-position:absolute;
-width:80px;
-height:80px;
-border:3px solid yellow;
-border-radius:50%;
-pointer-events:none;
-transform:translate(-50%,-50%);
-display:none;
-}
-
-#videoContainer{
-position:relative;
-display:inline-block;
 }
 
 </style>
@@ -69,8 +76,7 @@ display:inline-block;
  id="video"
  autoplay
  playsinline
- muted
- style="width:100%;max-width:500px;background:black;"> </video>
+ muted> </video>
 
   <div id="focusRing"></div>
 
@@ -79,10 +85,23 @@ display:inline-block;
 <canvas id="canvas"></canvas>
 
 <br>
-<button onclick="startCamera()">เปิดกล้อง</button>
-<button onclick="switchCamera()">สลับกล้อง</button>
-<button onclick="scanText()">อ่านข้อความ</button>
-<button onclick="copyText()">คัดลอก</button>
+
+<button onclick="startCamera()">
+เปิดกล้อง
+</button>
+
+<button onclick="switchCamera()">
+สลับกล้อง
+</button>
+
+<button onclick="scanText()">
+อ่านข้อความ
+</button>
+
+<button onclick="copyText()">
+คัดลอก
+</button>
+
 <br>
 
 <textarea id="result"></textarea>
@@ -92,6 +111,7 @@ display:inline-block;
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const result = document.getElementById('result');
+const focusRing = document.getElementById('focusRing');
 
 let stream = null;
 
@@ -103,7 +123,7 @@ async function startCamera(){
 
     if(stream){
 
-      stream.getTracks().forEach(track => {
+      stream.getTracks().forEach(track=>{
         track.stop();
       });
 
@@ -112,9 +132,19 @@ async function startCamera(){
     stream = await navigator.mediaDevices.getUserMedia({
 
       video:{
+
         facingMode: useFrontCamera
           ? "user"
-          : "environment"
+          : "environment",
+
+        width:{
+          ideal:1920
+        },
+
+        height:{
+          ideal:1080
+        }
+
       },
 
       audio:false
@@ -123,9 +153,13 @@ async function startCamera(){
 
     video.srcObject = stream;
 
+    await video.play();
+
   }catch(err){
 
-    alert(err.name + "\n" + err.message);
+    alert(
+      err.name + "\n" + err.message
+    );
 
   }
 
@@ -138,6 +172,50 @@ async function switchCamera(){
   await startCamera();
 
 }
+
+video.addEventListener('click', async (e)=>{
+
+  if(!stream) return;
+
+  const rect = video.getBoundingClientRect();
+
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  focusRing.style.left = x + "px";
+  focusRing.style.top = y + "px";
+
+  focusRing.style.display = "block";
+
+  setTimeout(()=>{
+
+    focusRing.style.display = "none";
+
+  },1000);
+
+  try{
+
+    const track = stream.getVideoTracks()[0];
+
+    await track.applyConstraints({
+
+      advanced:[
+
+        {
+          zoom:1.0001
+        }
+
+      ]
+
+    });
+
+  }catch(err){
+
+    console.log(err);
+
+  }
+
+});
 
 async function scanText(){
 
@@ -160,8 +238,15 @@ async function scanText(){
   const {
     data:{ text }
   } = await Tesseract.recognize(
+
     canvas,
-    'tha+eng'
+
+    'tha+eng',
+
+    {
+      logger:m=>console.log(m)
+    }
+
   );
 
   result.value = text;
@@ -178,82 +263,8 @@ async function copyText(){
 
 }
 
-  const focusRing = document.getElementById('focusRing');
-
-video.addEventListener('click', async (e)=>{
-
-if(!stream) return;
-
-const rect = video.getBoundingClientRect();
-
-const x = e.clientX - rect.left;
-const y = e.clientY - rect.top;
-
-focusRing.style.left = x + "px";
-focusRing.style.top = y + "px";
-
-focusRing.style.display = "block";
-
-setTimeout(()=>{
-focusRing.style.display = "none";
-},1000);
-
-try{
-
-```
-const track = stream.getVideoTracks()[0];
-
-const capabilities = track.getCapabilities();
-
-console.log(capabilities);
-
-if(capabilities.focusMode){
-
-  await track.applyConstraints({
-
-    advanced:[
-
-      {
-        focusMode:"single-shot"
-      }
-
-    ]
-
-  });
-
-}
-```
-
-}catch(err){
-
-```
-console.log(err);
-```
-
-}
-
-});
-
 </script>
 
-
 </body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
